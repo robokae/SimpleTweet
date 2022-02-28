@@ -1,11 +1,20 @@
 package com.codepath.apps.restclienttemplate;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Bundle;
 import android.util.Log;
 
+import com.codepath.apps.restclienttemplate.models.Tweet;
 import com.codepath.asynchttpclient.callback.JsonHttpResponseHandler;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import okhttp3.Headers;
 
@@ -14,6 +23,9 @@ public class TimelineActivity extends AppCompatActivity {
     public static final String TAG = "TimelineActivity";
 
     RestClient client;
+    RecyclerView rvTweets;
+    List<Tweet> tweets;
+    TweetsAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,6 +33,18 @@ public class TimelineActivity extends AppCompatActivity {
         setContentView(R.layout.activity_timeline);
 
         client = RestApplication.getRestClient(this);
+
+        // Find the recycler view
+        rvTweets = findViewById(R.id.rvTweets);
+
+        // Initialize the list of Tweets and adapter
+        tweets = new ArrayList<>();
+        adapter = new TweetsAdapter(this, tweets);
+
+        // Recycler view setup: layout manager and the adapter
+        rvTweets.setLayoutManager(new LinearLayoutManager(this));
+        rvTweets.setAdapter(adapter);
+
         populateHomeTimeline();
     }
 
@@ -29,6 +53,17 @@ public class TimelineActivity extends AppCompatActivity {
             @Override
             public void onSuccess(int statusCode, Headers headers, JSON json) {
                 Log.i(TAG, "onSuccess" + json.toString());
+
+                JSONArray jsonArray = json.jsonArray;
+                try {
+                    // Get list of Tweet objects from JSON array
+                    tweets.addAll(Tweet.fromJsonArray(jsonArray));
+
+                    // Notify adapter that data has changed
+                    adapter.notifyDataSetChanged();
+                } catch(JSONException e) {
+                    Log.e(TAG, "JSON exception", e);
+                }
             }
 
             @Override
